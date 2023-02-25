@@ -1,6 +1,7 @@
 package com.baeldung.lss.web.controller;
 
 import com.baeldung.lss.persistence.UserRepository;
+import com.baeldung.lss.service.AsyncBean;
 import com.baeldung.lss.service.IUserService;
 import com.baeldung.lss.validation.EmailExistsException;
 import com.baeldung.lss.web.model.User;
@@ -26,12 +27,15 @@ class UserController {
     private UserRepository userRepository;
 
     @Autowired
+    private AsyncBean asyncBean;
+    @Autowired
     private IUserService userService;
 
     @RequestMapping
     @PreAuthorize("isAdmin()")
     public ModelAndView list() {
         Iterable<User> users = this.userRepository.findAll();
+        asyncBean.asyncCall();
         return new ModelAndView("tl/list", "users", users);
     }
 

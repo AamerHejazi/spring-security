@@ -4,9 +4,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,10 +16,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 
+import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
 
 @EnableWebSecurity
-@Configuration
+@EnableAsync
 //This is to allow @PreAuthorize and @secured annotations
 //@EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 public class LssSecurityConfig {
@@ -33,7 +36,20 @@ public class LssSecurityConfig {
         this.passwordEncoder = passwordEncoder;
         this.dataSource = dataSource;
     }
-
+    //second way to solve problem of thread auth issue delegating security context
+    @PostConstruct
+    public void enableAuthCtxOnSpawnedThreads() {
+        SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
+    }
+    //     first way to solve problem of thread auth issue  delegating security context
+//    @Bean
+//    public MethodInvokingFactoryBean methodInvokingFactoryBean() {
+//        MethodInvokingFactoryBean methodInvokingFactoryBean = new MethodInvokingFactoryBean();
+//        methodInvokingFactoryBean.setTargetClass(SecurityContextHolder.class);
+//        methodInvokingFactoryBean.setTargetMethod("setStrategyName");
+//        methodInvokingFactoryBean.setArguments(new String[]{SecurityContextHolder.MODE_INHERITABLETHREADLOCAL});
+//        return methodInvokingFactoryBean;
+//    }
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception { // @formatter:off 
         auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder);
